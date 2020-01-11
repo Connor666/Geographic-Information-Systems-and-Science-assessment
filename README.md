@@ -1,15 +1,13 @@
 # Geographic-Information-Systems-and-Science-assessment-
 
-
 中文版会在我写完之后发布，现在只有英文版.
 请勿转载，谢谢
 This tutorial is fully made by author, do not reprint without permit
 This tutorial aims to use GWR to find the coefficients of influcing factors of window opening in China. It has been divided into these parts :
-Bubble map, OLS model, Moran’s I, GWR
-
-Bubble map
+Bubble map, OLS model, Moran's I, GWR
+## Bubble map
 The bubble map code in R is shown in the bellow:
-
+```bash
 library(ggplot2)
 library(ggmap)
 library(maptools)
@@ -44,46 +42,14 @@ map <-
   )
 plot(map)
 
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-
+```
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200107214407816.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjg2NTUw,size_16,color_FFFFFF,t_70)
 The result of the data distribution. The dataset consists of 95 cities with window opening rate (dependent variable), and four other variables.
 
-OLS model
+## OLS model
 First the library in R we need:
 
+```bash
 library(tmap)
 library(readr)
 library(rgdal)
@@ -97,22 +63,11 @@ library(mapproj)
 library(spdep)
 library(car)
 library(spgwr)
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-If you need to download the shapefile of China, you can find from here.
-First let’s look at the OLS model:
+```
+If you need to download the shapefile of China, you can find from [here](https://gadm.org/download_country_v3.html).
+First let's look at the OLS model:
 
+```bash
 chinaSHP <- readOGR("exe/gadm36_CHN_1.shp")# Read SHP file
 dataWindow <- read_csv("cw/data.csv") # Read data
 model <- lm(`open rate` ~ `Dry-bulb temperature`+`Wind speed`+`External relative humidity`
@@ -120,13 +75,9 @@ model <- lm(`open rate` ~ `Dry-bulb temperature`+`Wind speed`+`External relative
 summary(model)
 plot(model) # Plot result
 durbinWatsonTest(model) #Autocorrelation
-1
-2
-3
-4
-5
-6
-7
+```
+
+```bash
 lm(formula = `open rate` ~ `Dry-bulb temperature` + `Wind speed` + 
     `External relative humidity` + `Atmospheric pressure`, data = dataWindow)
 
@@ -147,38 +98,19 @@ Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’
 Residual standard error: 0.06105 on 90 degrees of freedom
 Multiple R-squared:  0.8957,	Adjusted R-squared:  0.8911 
 F-statistic: 193.3 on 4 and 90 DF,  p-value: < 2.2e-16
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
+```
 It can be seen that some variable (wind speed,humidity) is not significant,the p-value is higher than 0.05. However, these variable is kept because these variable may not significant in overall model, but significant in each local model in GWR.
 
+```bash
  lag Autocorrelation D-W Statistic p-value
    1      0.06111587      1.846829   0.376
  Alternative hypothesis: rho != 0
-1
-2
-3
-DW statistics for our model is 1.84, it seems that it shoud be fine. However!!!
+```
+DW statistics for our model is 1.84, it seems that it shoud be fine. However!!!! 
 WE ARE USING GWR
-Thus, there may have spatial-autocorrelation. Let’s have a look:
+Thus, there may have spatial-autocorrelation. Let's have a look:
 
+```bash
 dataWindow$residuals <- residuals(model) 
 
 #Function to plot residuals
@@ -205,36 +137,11 @@ bubblefunc <- function(myData,size,name,myBreaks){
   plot(map)
 }
 bubblefunc(dataWindow,dataWindow$residuals,"Residuals",c(-0.2,-0.1,0,0.1,0.3)) # Plot residuals
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-
-The south part of China has higher residual and the pink areas are close to other pink areas. In other words, we may have some spatial autocorrelation. Let’s use moran’s I to test more systematically.
-
-Moran’s I
+```
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200107220125734.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjg2NTUw,size_16,color_FFFFFF,t_70)
+The south part of China has higher residual and the pink areas are close to other pink areas. In other words, we may have some spatial autocorrelation. Let's use moran's I to test more systematically.
+## Moran's I
+```bash
 xy=dataWindow[,c(13,14)]
 chinasf <- st_as_sf(x=xy,coords = c("longitude", "latitude"))
 chinasp <- as(chinasf, "Spatial") # Transform to "spatial"
@@ -248,21 +155,9 @@ plot(LWard_knn, coordinates(coordsW), col="blue") #Plot
 Lward.knn_4_weight <- nb2listw(LWard_knn, style="C")
 #moran's I test on the residuals
 moran.test(dataWindow$residuals, Lward.knn_4_weight)
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-
-
+```
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200107220545412.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjg2NTUw,size_16,color_FFFFFF,t_70)
+```bash
 	Moran I test under randomisation
 
 data:  dataWindow$residuals  
@@ -273,19 +168,10 @@ alternative hypothesis: greater
 sample estimates:
 Moran I statistic       Expectation          Variance 
       0.166649889      -0.010638298       0.004289717 
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-Moran I is within range of -1 to 1, and 0 means no spatial autocorrelation. Here, Moran’s I is 0.167, which implies that we may have some weak spatial autocorrelation in our residuals. Therefore, GWR is used to address this problem.
-
-GWR model
+```
+Moran I is within range of -1 to 1, and 0 means no spatial autocorrelation. Here, Moran's I is 0.167, which implies that we may have some weak spatial autocorrelation in our residuals. Therefore, GWR is used to address this problem.
+## GWR model
+```bash
 #calculate kernel bandwidth
 GWRbandwidth <- gwr.sel(`open rate` ~ `Dry-bulb temperature`+`Wind speed`+`External relative humidity`
                      +`Atmospheric pressure`,data=dataWindow,coords=coordsW,adapt=T)
@@ -296,16 +182,9 @@ GWRModel <- gwr(`open rate` ~ `Dry-bulb temperature`+`Wind speed`+`External rela
 GWRModel #print the results of the model
 results<-as.data.frame(GWRModel$SDF)
 names(results)
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
+```
+
+```python
 gwr(formula = `open rate` ~ `Dry-bulb temperature` + 
     `Wind speed` + `External relative humidity` + 
     `Atmospheric pressure`, data = dataWindow, coords = coordsW, 
@@ -331,54 +210,25 @@ AICc (GWR p. 61, eq 2.33; p. 96, eq. 4.21): -266.3886
 AIC (GWR p. 96, eq. 4.22): -397.3086 
 Residual sum of squares: 0.05339408 
 Quasi-global R2: 0.9834058 
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-It can be seen that the value of coefficient of each variable is different in each localation. sometimes it’s positive and sometimes it’s negative. Let’s make a map for temperature this variable:
+```
+It can be seen that the value of coefficient of each variable is different in each localation. sometimes it's positive and sometimes it's negative. Let's make a map for temperature this variable:
 
+```bash
 dataWindow$coeTemperature <- results$X.Dry.bulb.temperature.
 bubblefunc(dataWindow,dataWindow$coeTemperature,'coeTemperature',c(0.02,0.05, 0.06,0.07, 0.08))
-1
-2
-
+```
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200107222402711.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjg2NTUw,size_16,color_FFFFFF,t_70)
 The south part of region has higher coefficient than other areas. However, we still need to take significance into account. In this study, if a coefficient estimate is more than 2 standard errors away from zero, then it is “statistically significant”.
 
+```bash
 #statistically significant test
 sigTest_Temp = abs(GWRModel$SDF$"`Dry-bulb temperature`") - 2 * GWRModel$SDF$"`Dry-bulb temperature`_se"
 dataWindow$GWRTemp <- sigTest_Temp
 bubblefunc(subset(dataWindow,dataWindow$GWRTemp>0),subset(dataWindow$coeTemperature,dataWindow$GWRTemp>0),'GWRTemp ',c(0.02,0.05, 0.06,0.07, 0.08))
-1
-2
-3
-4
-
-A lot of varables in temperature seems signficant. Similary, let’s look at other varables:
-
-
-
+```
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200107222914180.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjg2NTUw,size_16,color_FFFFFF,t_70)
+A lot of varables in temperature seems signficant. Similary, let's look at other varables:
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200108025714882.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjg2NTUw,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200108025734588.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjg2NTUw,size_16,color_FFFFFF,t_70)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20200108025910229.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQyNjg2NTUw,size_16,color_FFFFFF,t_70)
 It can be seen that the coefficient have significant different in other varibales. Therefore, the influencing factors of window have spatial variations.
-————————————————
-版权声明：本文为CSDN博主「Fu_Connor」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
-原文链接：https://blog.csdn.net/qq_42686550/article/details/103882263
